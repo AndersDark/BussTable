@@ -1,12 +1,14 @@
 #pragma once
 
 // Network SSID
-// #define NETWORK_NAME "Get-2G-3510F1"
-// #define NETWORK_PASSWORD "HRX448U44B"
+#define NETWORK_NAME "DarkNet-2G"
+#define NETWORK_PASSWORD "SanctusOmega100"
 
 // pc network
-#define NETWORK_NAME "DarkNett"
-#define NETWORK_PASSWORD "11223344"
+// #define NETWORK_NAME "DarkNett"
+// #define NETWORK_PASSWORD "11223344"
+
+#define URL "https://api.entur.io/journey-planner/v2/graphql"
 
 // HTTPS fingerprint
 // NB!!! can expire
