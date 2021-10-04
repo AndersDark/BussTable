@@ -4,6 +4,7 @@
 #include <Wire.h>
 
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
@@ -129,9 +130,14 @@ void WiFiConnect(){
 void requestArrivalTime(const String& route){
   if (WiFi.status() == WL_CONNECTED) {
  
-    HTTPClient http;    
-    http.useHTTP10(true); // to not get chunked response 
-    http.begin("https://api.entur.io/journey-planner/v2/graphql",FINGERPRINT);
+    HTTPClient http;
+    WiFiClientSecure client;
+    
+    client.setFingerprint(FINGERPRINT);
+
+    client.connect(URL,443);
+
+    http.begin(client, URL);
 
     http.addHeader("Content-Type", "application/json"); 
     http.addHeader("ET-Client-Name", "student-bussAPI");
