@@ -12,8 +12,8 @@
 
 #include "settings.h"
 
-const int buttonPin = D1;
-const int rs = D8, en = D7, d4 = D5, d5 = D6, d6 = D3, d7 = D2;
+const int buttonPin = D8;
+const int rs = D7, en = D6, d4 = D5, d5 = D1, d6 = D2, d7 = D3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 struct Time{
