@@ -51,11 +51,10 @@ void setup() {
   pinMode(buttonPin, INPUT);
   lcd.begin(16, 2);
   delay(1000);
+  Serial.print("Starting up \n");
   
   WiFiConnect();
 
-  configTime(0,0,NTP_SERVER);
-  setTZ(TZ_INFO);
   timeSetup();
   updateTrueTime();
   lastUpdateTime = millis();
@@ -85,7 +84,6 @@ void loop() {
   if (millis() - lastUpdateTime > 20000){ //update every 20 sec
     lastUpdateTime = millis();
     lastSecond = millis();
-    updateTrueTime();
     bussTimeUpdate();
   }
 
@@ -207,6 +205,9 @@ void screenUpdate(){
 }
 
 void timeSetup() {
+    configTime(0,0,NTP_SERVER);
+    setTZ(TZ_INFO);
+    Serial.print("Setting up time");
     while(!time(nullptr)){
       Serial.print(".");
       delay(1000);
@@ -225,29 +226,30 @@ void updateTrueTime(){
   trueTime.sec = timeInfo->tm_sec;
 
   Serial.print("time updated");
+  Serial.println(trueTime.hour);
+  Serial.println(trueTime.min);
+  Serial.println(trueTime.sec);
   Serial.print('\n');
 }
 
 void oneSecondPass(){
-  if (bussTime.sec == 0){
-    bussTime.sec = 59;
-    if (bussTime.min == 0){
-      bussTime.min = 59;
-      if (bussTime.hour == 0){
-        bussTime.hour = 0;
-        bussTime.min = 0;
-        bussTime.sec = 0;
+  if (trueTime.sec == 59){
+    trueTime.sec = 0;
+    if (trueTime.min == 59){
+      trueTime.min = 0;
+      if (trueTime.hour == 23){
+        trueTime.hour = 0;
       }
       else {
-        bussTime.hour--;
+        trueTime.hour++;
       }
     }
     else {
-      bussTime.min--;
+      trueTime.min++;
     }
   }
   else {
-    bussTime.sec--;
+    trueTime.sec++;
   }
 }
 
