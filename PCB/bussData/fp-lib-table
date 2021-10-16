@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name d1_mini)(type KiCad)(uri ${KICAD_TEMPLATE_DIR}/d1_mini)(options "")(descr "")(disabled))
+  (lib (name D1_mini)(type KiCad)(uri ${KICAD_TEMPLATE_DIR}/d1_mini/template/lib/D1_mini.pretty)(options "")(descr ""))
+)
