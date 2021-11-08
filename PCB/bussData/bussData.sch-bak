@@ -18,39 +18,39 @@ L Display_Character:RC1602A LCD1
 U 1 1 61644224
 P 4100 4300
 F 0 "LCD1" V 4054 5044 50  0000 L CNN
-F 1 "RC1602A" V 4145 5044 50  0000 L CNN
+F 1 "RC1602A" V 4145 5044 50  0001 L CNN
 F 2 "Display:WC1602A" H 4200 3500 50  0001 C CNN
 F 3 "http://www.raystar-optronics.com/down.php?ProID=18" H 4200 4200 50  0001 C CNN
 	1    4100 4300
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R_LCD_GND1
+L Device:R GND1
 U 1 1 6164578F
 P 4200 4950
-F 0 "R_LCD_GND1" H 4270 4996 50  0000 L CNN
-F 1 "?" H 4270 4905 50  0000 L CNN
+F 0 "GND1" H 4270 4996 50  0000 L CNN
+F 1 "?" H 4270 4905 50  0001 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 4130 4950 50  0001 C CNN
 F 3 "~" H 4200 4950 50  0001 C CNN
 	1    4200 4950
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R__LCD_VDD1
+L Device:R VDD1
 U 1 1 61645FE6
 P 4400 5100
-F 0 "R__LCD_VDD1" H 4470 5146 50  0000 L CNN
-F 1 "?" H 4470 5055 50  0000 L CNN
+F 0 "VDD1" H 4470 5146 50  0000 L CNN
+F 1 "?" H 4470 5055 50  0001 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 4330 5100 50  0001 C CNN
 F 3 "~" H 4400 5100 50  0001 C CNN
 	1    4400 5100
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R_btn
+L Device:R R_btn1
 U 1 1 61646194
 P 5550 3500
-F 0 "R_btn" H 5620 3546 50  0000 L CNN
+F 0 "R_btn1" H 5620 3546 50  0000 L CNN
 F 1 "?" H 5620 3455 50  0001 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 5480 3500 50  0001 C CNN
 F 3 "~" H 5550 3500 50  0001 C CNN
@@ -58,10 +58,10 @@ F 3 "~" H 5550 3500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_POT_TRIM DIM
+L Device:R_POT_TRIM DIM1
 U 1 1 616516AF
 P 5850 2950
-F 0 "DIM" V 5735 2950 50  0000 C CNN
+F 0 "DIM1" V 5735 2950 50  0000 C CNN
 F 1 "R_POT_TRIM" V 5644 2950 50  0001 C CNN
 F 2 "Potentiometer_THT:Potentiometer_Vishay_T73YP_Vertical" H 5850 2950 50  0001 C CNN
 F 3 "~" H 5850 2950 50  0001 C CNN
@@ -134,17 +134,6 @@ Wire Wire Line
 Wire Wire Line
 	6750 2950 6750 3850
 Connection ~ 6750 2950
-$Comp
-L wemos_mini:WeMos_mini esp8266
-U 1 1 61660B12
-P 2550 2450
-F 0 "esp8266" V 2497 1872 60  0000 R CNN
-F 1 "WeMos_mini" V 2603 1872 60  0000 R CNN
-F 2 "Module:D1_mini_board" H 3100 1750 60  0001 C CNN
-F 3 "" H 2550 2981 60  0000 C CNN
-	1    2550 2450
-	0    -1   1    0   
-$EndComp
 Wire Wire Line
 	2200 1950 2200 900 
 Wire Wire Line
@@ -208,4 +197,26 @@ Wire Wire Line
 Connection ~ 5550 3700
 Wire Wire Line
 	5550 3700 5550 3650
+$Comp
+L Switch:SW_Push_Open btn1
+U 1 1 616B840E
+P 5900 3850
+F 0 "btn1" H 5900 3974 50  0000 C CNN
+F 1 "SW_Push_Open" H 5900 3974 50  0001 C CNN
+F 2 "Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_1.00u" H 5900 4050 50  0001 C CNN
+F 3 "~" H 5900 4050 50  0001 C CNN
+	1    5900 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L wemos_mini:WeMos_mini esp8266
+U 1 1 61660B12
+P 2550 2450
+F 0 "esp8266" V 2497 1872 60  0000 R CNN
+F 1 "WeMos_mini" V 2603 1872 60  0001 R CNN
+F 2 "Module:D1_mini_board" H 3100 1750 60  0001 C CNN
+F 3 "" H 2550 2981 60  0000 C CNN
+	1    2550 2450
+	0    -1   1    0   
+$EndComp
 $EndSCHEMATC
