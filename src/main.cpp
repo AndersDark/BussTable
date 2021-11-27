@@ -5,96 +5,84 @@
 
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
+#include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
-#include <time.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include <Ticker.h>
+
+#include <StreamUtils.h>
+
+#define SERIAL_OUTPUT true
+
+#if SERIAL_OUTPUT
+  #define SERIAL_PRINT(x) Serial.println(x)
+#else
+  #define SERIAL_PRINT(x)
+#endif
 
 #include "settings.h"
+#include "utilities.h"
 
-const int buttonPin = D8;
-const int rs = D7, en = D6, d4 = D5, d5 = D1, d6 = D2, d7 = D3;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-struct Time{
-  int hour;
-  int min;
-  int sec;
-};
-
-int caseAmount = 2;
-int caseActive = 0;
-bool buttonPressed = false;
-
-Time bussTime;
-Time trueTime;
-
-unsigned long lastUpdateTime;
-unsigned long lastSecond;
-
-void WiFiConnect();
-
-void requestArrivalTime(const String& route);
-void bussTimeUpdate();
-void bussTextUpdate();
-void screenUpdate();
-
-void timeSetup();
-void updateTrueTime();
-void oneSecondPass();
-void differentialTime();
 
 //--------------------------------------------------------------
 
 void setup() {
-  Serial.begin(115200);
+  #if SERIAL_OUTPUT
+    Serial.begin(115200);
+    while(!Serial);
+    SERIAL_PRINT("Setting up");
+  #endif
+
   pinMode(buttonPin, INPUT);
   lcd.begin(16, 2);
   delay(1000);
-  
+
   WiFiConnect();
-
-  configTime(0,0,NTP_SERVER);
-  setTZ(TZ_INFO);
+  
+  secondAdder.attach(1,oneSecondPass);
   timeSetup();
-  updateTrueTime();
-  lastUpdateTime = millis();
 
-  while(!digitalRead(buttonPin)){
-    delay(100);
-  }
+  SERIAL_PRINT("time and wifi set up");
+
+  lcd.clear();
+  lcd.print(busses[caseActive]);
+  requestArrivalTime(busses[caseActive]);
+  screenTimeUpdate();
+
+  lastUpdateTime = millis();
+  lastSecond = millis();
 }
 
 void loop() {
   if (digitalRead(buttonPin) && !buttonPressed){
     buttonPressed = true;
-    caseActive = (caseActive + 1) % caseAmount;
+    caseActive = (caseActive + 1) % (sizeof(busses)/sizeof(busses[0]));
 
     lcd.clear();
-    bussTextUpdate();
+    lcd.print(busses[caseActive]);
+    requestArrivalTime(busses[caseActive]);
+    screenTimeUpdate();
     lastUpdateTime = millis();
-
-    bussTimeUpdate();
-    screenUpdate();
   }
 
   if (!digitalRead(buttonPin) && buttonPressed){
     buttonPressed = false;
   }
 
-  if (millis() - lastUpdateTime > 20000){ //update every 20 sec
+  if (millis() - lastUpdateTime > updateFrequency){
+    nowShowing = false;
     lastUpdateTime = millis();
-    lastSecond = millis();
-    updateTrueTime();
-    bussTimeUpdate();
+    requestArrivalTime(busses[caseActive]);
   }
 
+
   if (millis() - lastSecond > 1000){
+    screenTimeUpdate();
     lastSecond = millis();
-    oneSecondPass();
-    screenUpdate();
   }
-  delay(200);
 }
 
 //--------------------------------------------------------------
@@ -108,6 +96,7 @@ void WiFiConnect(){
   lcd.setCursor(0,1);
   lcd.print(NETWORK_NAME);
 
+  
   while (WiFi.status() != WL_CONNECTED && tries < maxTries) {
     delay(1000);
     tries++;
@@ -119,9 +108,8 @@ void WiFiConnect(){
     lcd.print("Success!");
     lcd.setCursor(0,1);
     lcd.print(WiFi.localIP());
-    delay(2000);
   } else {
-    lcd.print("Failed to connect");
+    lcd.print("Failed!");
     delay(10000);
     ESP.restart();
   }
@@ -132,39 +120,41 @@ void requestArrivalTime(const String& route){
  
     HTTPClient http;
     WiFiClientSecure client;
-    
     client.setFingerprint(FINGERPRINT);
+    client.setTimeout(30000);
 
-    client.connect(URL,443);
-
-    http.begin(client, URL);
+    http.begin(client, HOST);
 
     http.addHeader("Content-Type", "application/json"); 
     http.addHeader("ET-Client-Name", "student-bussAPI");
     http.addHeader("Connection","keep-alive");
 
     int httpCode = http.POST(QUERY);
-    Serial.println(httpCode);   
+    SERIAL_PRINT((String)"httpcode (200 is good): "+httpCode);
+
     Stream& response = http.getStream();
-    StaticJsonDocument<768> doc;
-    deserializeJson(doc,response);
-    http.end();
 
-    JsonArray calls = doc["data"]["quay"]["estimatedCalls"];
-
-    for (JsonObject call : calls){
-      if (call["destinationDisplay"]["frontText"] == route){
-        String timeString = call["expectedArrivalTime"];
-        // timeString: "YYYY-MM-DDTHH-MM-SS+0200"
-        int hours = timeString.substring(11,13).toInt();
-        int min = timeString.substring(14,16).toInt();
-        int sec = timeString.substring(17,19).toInt();
-        
-        bussTime = Time{hours,min,sec};
-        return;
+    response.find('['); //move to estimated calls
+    String timeString;
+    String str;
+    while(true){
+      str = response.readStringUntil(',');
+      if(str == ""){
+        break;
+      }
+      if(str.substring(36,36+route.length()) == route){
+      /* {"destinationDisplay":{"frontText":"Havstad via Lerkendal"}
+                                            ^36                  ^36+route.length() */
+        timeString = response.readStringUntil(',').substring(34,42);
+        /* "expectedArrivalTime":"2021-11-27T00:05:51+0100"}
+                                            ^34     ^42 */
+        break;
       }
     }
-  
+    http.end();
+    bussTime.hour = timeString.substring(0,2).toInt();
+    bussTime.min = timeString.substring(3,5).toInt();
+    bussTime.sec = timeString.substring(6).toInt();
 
   } else {
     Serial.println("Error in WiFi connection");
@@ -173,97 +163,77 @@ void requestArrivalTime(const String& route){
   }
 }
 
-void bussTimeUpdate(){
-  switch(caseActive){
-    case 0:
-      requestArrivalTime("Hallset via sentrum");
-      differentialTime();
-      break;
-
-    case 1:
-      requestArrivalTime("Lerkendal");
-      differentialTime();
-      break;
-  }
-}
-
-void bussTextUpdate(){
-  switch(caseActive){
-    case 0:
-      lcd.print("3ern");
-      break;
-
-    case 1:
-      lcd.print("Lerkendal");
-      break;
-  }
-}
-
-void screenUpdate(){
+void screenTimeUpdate(){
+  Time diffTime = differentialTime();
   char counter[16];
-  sprintf(counter,"%02d:%02d:%02d", bussTime.hour, bussTime.min, bussTime.sec);
+
+  if(diffTime.sec == 69){
+    sprintf(counter,"Now     ");
+  }
+  else{
+    sprintf(counter,"%02d:%02d:%02d", diffTime.hour, diffTime.min, diffTime.sec);
+  }
   lcd.setCursor(0, 1);
   lcd.print(counter);
 }
 
 void timeSetup() {
-    while(!time(nullptr)){
-      Serial.print(".");
-      delay(1000);
-    }
+  int offset = getUTCoffset();
+  WiFiUDP ntpUDP;
+  NTPClient timeClient(ntpUDP,"ntp.justervesenet.no",offset*3600);
+  timeClient.begin();
+  timeClient.update();
+  trueTime.hour = timeClient.getHours();
+  trueTime.min = timeClient.getMinutes();
+  trueTime.sec = timeClient.getSeconds();
 }
 
-void updateTrueTime(){
-  tm* timeInfo;
-  time_t now;
-
-  time(&now);
-  timeInfo = localtime(&now);
-
-  trueTime.hour = timeInfo->tm_hour;
-  trueTime.min = timeInfo->tm_min;
-  trueTime.sec = timeInfo->tm_sec;
-
-  Serial.print("time updated");
-  Serial.print('\n');
+int getUTCoffset(){
+  return 1;  
 }
 
 void oneSecondPass(){
-  if (bussTime.sec == 0){
-    bussTime.sec = 59;
-    if (bussTime.min == 0){
-      bussTime.min = 59;
-      if (bussTime.hour == 0){
-        bussTime.hour = 0;
-        bussTime.min = 0;
-        bussTime.sec = 0;
+  if (trueTime.sec == 59){
+    trueTime.sec = 0;
+    if (trueTime.min == 59){
+      trueTime.min = 0;
+      if (trueTime.hour == 23){
+        trueTime.hour = 0;
       }
       else {
-        bussTime.hour--;
+        trueTime.hour++;
       }
     }
     else {
-      bussTime.min--;
+      trueTime.min++;
     }
   }
   else {
-    bussTime.sec--;
+    trueTime.sec++;
   }
 }
 
-void differentialTime(){
-  bussTime.sec -= trueTime.sec;
-  bussTime.min -= trueTime.min;
-  bussTime.hour -= trueTime.hour;
-  if (bussTime.sec < 0){
-    bussTime.sec += 60;
-    bussTime.min--;
+Time differentialTime(){
+  Time diffTime{bussTime.hour - trueTime.hour,bussTime.min - trueTime.min,bussTime.sec - trueTime.sec};
+  if(nowShowing){
+    return Time{0,0,69};
   }
-  if (bussTime.min < 0){
-    bussTime.min += 60;
-    bussTime.hour--;
+  if(diffTime.hour <= 0 && diffTime.min <= 0 && diffTime.sec <= 0){
+    nowShowing = true;
+    lastUpdateTime = millis() - (updateFrequency - 10*1000); //now for 10 sec
+    return Time{0,0,69};
   }
-  if (bussTime.hour < 0){
-    bussTime.hour += 24;
+
+  if (diffTime.sec < 0){
+    diffTime.sec += 60;
+    diffTime.min--;
   }
+  if (diffTime.min < 0){
+    diffTime.min += 60;
+    diffTime.hour--;
+  }
+  if (diffTime.hour < 0){
+    diffTime.hour += 24;
+  }
+  return diffTime;
 }
