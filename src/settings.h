@@ -8,15 +8,15 @@
 // #define NETWORK_NAME "DarkNett"
 // #define NETWORK_PASSWORD "11223344"
 
-#define URL "https://api.entur.io/journey-planner/v2/graphql"
+#define HOST "https://api.entur.io/journey-planner/v2/graphql"
 
 // HTTPS fingerprint
 // NB!!! can expire
 #define FINGERPRINT "8f38836d359a28e11521129f144c0ef0c2c9df95" 
 
-#define QUERY "{\"query\": \"{quay(id:\\\"NSR:Quay:74954\\\"){name estimatedCalls{expectedArrivalTime destinationDisplay{frontText}}}}\"}"
+#define QUERY "{\"query\":\"{quay(id:\\\"NSR:Quay:74954\\\"){estimatedCalls{destinationDisplay{frontText} expectedArrivalTime}}}\"}"
 // "NSR:Quay:74954" er busstoppet for berg studentby mot byen.
 // Det er mulig å finne andre busstopp eller "quay" på https://api.entur.io/journey-planner/v2/ide/
 
-#define NTP_SERVER "no.pool.ntp.org" //to get time
-#define TZ_INFO "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" //Norwegian timezone
+String busses[] = {"Hallset via sentrum","Havstad via Lerkendal","Tempe"};
+// Må være det som står på bussen
